@@ -4,7 +4,7 @@ PAPER = saner-era2016
 
 # Set this to the other source files that should be counted as 
 # dependencies
-OTHERSOURCES := 
+OTHERSOURCES := saner-era2016.bib
 
 all: $(PAPER).pdf
 

@@ -2,7 +2,7 @@
 %2345678901234567890123456789012345678901234567890123456789012345678901234567890
 %        1         2         3         4         5         6         7         8
 
-\documentclass{paper}
+\documentclass[conference]{IEEEtran}
 \usepackage{authblk}
 \usepackage{courier}
 \usepackage[utf8]{inputenc}
@@ -105,16 +105,16 @@ At present, a more reasonable goal is that a correct patch is high enough  on th
 \item Generality: 
 The range of bugs a repair algorithm is able to address. 
 While tools that address specific types of bugs may be adept in their particular field, there are simply too many different types of bugs for addressing them with individual programs to be practical. 
-Methods that use certain preset types of modifications report that no one modification ever accounts for a large fraction of total repairs \cite{PAR}, \cite{History Driven Program Repair}, \cite{SPR}. 
+Methods that use certain preset types of modifications report that no one modification ever accounts for a large fraction of total repairs \cite{PAR}, \cite{hdrepair}, \cite{SPR}. 
 For automated program repair to become highly useful in a real-world environment, it must be general enough to fix a wide range of bugs.
 \end{itemize}
 
 
 Several methods exist for automatic program repair, but all of them encounter problems with at least one of the above criteria. 
 Semantic algorithms like DirectFix or Angelix are limited in the bugs they are able to address and sometimes scale poorly \cite{Angelix}. 
-Search-based algorithms such as GenProg and SPR offer the possibility of a wider range of patches, but also are very likely to create patches which pass the test suite, but are ultimately incorrect \cite{Angelix}, \cite{SPR} \cite{Genprog}. One reason that search-based methods have this problem is that the search space is effectively infinite, and within this space, there are many more patches that pass all tests (plausible patches) and are incorrect than there are correct patches \cite{Analysis of search space}. 
+Search-based algorithms such as GenProg and SPR offer the possibility of a wider range of patches, but also are very likely to create patches which pass the test suite, but are ultimately incorrect \cite{Angelix}, \cite{SPR} \cite{Genprog}. One reason that search-based methods have this problem is that the search space is effectively infinite, and within this space, there are many more patches that pass all tests (plausible patches) and are incorrect than there are correct patches \cite{searchspace}. 
 One solution to this problem is to use a fast, learned heuristic to focus the search on patches that look like human-written patches, which are more likely to be correct \cite{Prophet}. 
-Another approach is to introduce semantic constraints and use theorem proving to ensure that functionality is not deleted \cite{SearchRepair}, \cite{SR thesis}. 
+Another approach is to introduce semantic constraints and use theorem proving to ensure that functionality is not deleted \cite{SearchRepair}, \cite{srthesis}. 
 
 In this paper, we combine this fast heuristic search with more rigorous theorem-proving techniques to create a method that is both fast and reliable. 
 
@@ -141,8 +141,8 @@ Its algorithm works approximately as follows:
 In the months after GenProg's publishing, however, it became apparent that the method was not as effective as it had first seemed. 
 Several studies found that GenProg frequently \say{fixed} bugs by deleting functionality. 
 This is because its fitness function is defined solely by the test suite. 
-Any functionality not covered by the test suite is likely to be deleted if any part of it contributes to buggy behavior \cite{Patch plausibility}. 
-Since the GenProg stops searching once it has found a patch that passes all the tests in the test suite, this pattern of functionality-deletion often contributes to GenProg failing to find patches that are within its search space \cite{Analysis of search space}.
+Any functionality not covered by the test suite is likely to be deleted if any part of it contributes to buggy behavior \cite{plausibility}. 
+Since the GenProg stops searching once it has found a patch that passes all the tests in the test suite, this pattern of functionality-deletion often contributes to GenProg failing to find patches that are within its search space \cite{searchspace}.
 
 This problem can also be viewed as an issue of overfitting. 
 In a sense, GenProg overfits to the test suite by using it as the sole determinant of whether a patch is correct. 
@@ -155,7 +155,7 @@ Each hand-coded rule, or schema, covers a specific type of repair. SPR and Proph
 If it is not, the schema is discarded. 
 They then generate a search space of patches from the remaining schemas, and test each of the patches in this space.
 
-Since correct patches are sparse in the space of plausible patches, randomly generating solutions is more likely to produce plausible, incorrect patches than correct patches \cite{Analysis of search space}.  
+Since correct patches are sparse in the space of plausible patches, randomly generating solutions is more likely to produce plausible, incorrect patches than correct patches \cite{searchspace}.  
 The authors of SPR and Prophet believe that their careful construction of patches is less likely to produce incorrect patches because it utilizes more information, both about the program and about the nature of developer patches.  
 Prophet also uses machine learning to select for patches with similar qualities to human patches \cite{Prophet}. 
 This has several advantages. 
@@ -181,14 +181,14 @@ In addition, SearchRepair uses theorem proving to speed up this search.
 Although theorem proving is very slow, it is still much faster than running the test suite for every patch. 
 
 SearchRepair generates patches with much higher quality than its purely random counterparts, passing 97.3\% of tests in an independent test suite, as opposed to GenProg's 68.7\%. 
-Although SearchRepair did not fix as many bugs as GenProg, RSRepair, or AE, this may be because these other methods might have fixed a large number of bugs simply by deleting functionality \cite{SearchRepair}, \cite{Patch plausibility}. 
+Although SearchRepair did not fix as many bugs as GenProg, RSRepair, or AE, this may be because these other methods might have fixed a large number of bugs simply by deleting functionality \cite{SearchRepair}, \cite{plausibility}. 
 
 
-SearchRepair has major issues with scalability \cite{SR thesis}. 
+SearchRepair has major issues with scalability \cite{srthesis}. 
 It was almost two orders of magnitude slower than the second slowest method run on the Introclass benchmark, and three orders of magnitude slower than all other methods. 
 One of the main reasons for this is the way its theorem prover works. 
 Because SearchRepair uses pieces of code from other applications as its patches, it must rename the variables to insert the code. 
-However, it has no \textit{a priori} way of knowing what the correct variable mapping is, so it must run theorem proving on each possible mapping \cite{SR thesis}. 
+However, it has no \textit{a priori} way of knowing what the correct variable mapping is, so it must run theorem proving on each possible mapping \cite{srthesis}. 
 This means that the theorem prover must run $n!$ times on each patch, where n is the number of variables. 
 Since SMT satisfiability is already an NP-Hard problem, SearchRepair effectively tries to brute-force an NP-Hard problem (variable mapping) that involves solving another NP-Hard problem (SMT satisfiability) on every iteration. 
 This is, needless to say, very inefficient. 
@@ -439,7 +439,7 @@ Similarly, highly redundant snippets are possible in the current implementation.
 By keeping track of both how often a given snippet fails and how much its fixes overlap with those of other snippets, the database itself can be made adaptive. 
 This would allow the possibility of establishing a general set of patches that cover a wide range of bugs. 
 Other authors have tried similar techniques with good results. 
-For instance, in \textit{History Driven Program Repair}, the authors use a graph-based learner to learn general patch types from developer patches of real programs \cite{History Driven Program Repair}. 
+For instance, in \textit{History Driven Program Repair}, the authors use a graph-based learner to learn general patch types from developer patches of real programs \cite{hdrepair}. 
 This learner is used to guide the creation of future patches, just like here the success of code snippets would guide their future use. 
 
 
@@ -452,6 +452,7 @@ Combining Prophet's fast feature-based search with SearchRepair's slower, more r
 \section*{Acknowledgement}
 The authors would like to acknowledge the help of Claire Le Goues and Afsoon Afzal for their implementation of SearchRepair, as well as Kristen Justice for her guidance in this project.
 
+
 \addtolength{\textheight}{-12cm}   % This command serves to balance the column lengths
                                   % on the last page of the document manually. It shortens
                                   % the textheight of the last page by a suitable amount.
@@ -461,36 +462,8 @@ The authors would like to acknowledge the help of Claire Le Goues and Afsoon Afz
 
 
 
-\begin{thebibliography}{99}
-
-\bibitem{Angelix} S. Mechtaev, Y. Jooyong, and  R. Abhik R., Angelix: Scalable multiline program patch synthesis via symbolic analysis, in \textit{Proceedings of the 38th International Conference on Software Engineering.}, New York, NY, 2016, pp. 691-701.
-
-\bibitem{Prophet} F. Long and M. Rinard, Automatic patch generation by learning correct code, in \textit{Proceedings of the 43rd Annual ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages.} 2016, pp. 298-312. 
-
-\bibitem{Genprog} C. Le Goues, M. Dewey-Vogt, S. Forrest, and W. Weimer, A Systematic Study of Automated Program Repair: Fixing 55 out of 105 bugs for \$8 Each. \textit{ International Conference on Software Engineering (ICSE).} 2012, pp. 3-13.
-
-\bibitem{SPR} F. Long and M. Rinard, Staged program repair with condition synthesis, in \textit{Proceedings of the 2015 10th Joint Meeting on Foundations of Software Engineering.}  2015, pp. 166-178.
-
-\bibitem{Analysis of search space} F. Long and M. Rinard, An analysis of the search spaces for generate and validate patch generation systems. \textit{Proceedings of the 38th International Conference on Software Engineering.} 2016, pp.702-713.
-
-\bibitem{Current problems} C. Le Goues, S. Forrest, and W. Weimer, Current challenges in automatic software repair. \textit{Software Quality Journal} vo. 21, no. 3, pp. 421-443, 2013.
-
-\bibitem{Patch plausibility} Z. Qi, F. Long, S. Achour, and M. Rinard, An analysis of patch plausibility and correctness for generate-and-validate patch generation systems. in \textit{Proceedings of the 2015 International Symposium on Software Testing and Analysis.}  2015, pp. 24-36. 
-
-\bibitem{SearchRepair}  Y. Ke, K. Stolee, C. Le Goues, and Y. Brun, Repairing Programs with Semantic Code Search. In \textit{Automated Software Engineering (ASE), 2015 30th IEEE/ACM International Conference.} 2015, pp. 295-306. 
-
-\bibitem{MLN}  M. Richardson and P. Domingos, Markov logic networks. \textit{Machine learning}, 2006. vo. 62, no.1-2, pp.107-136.
-
-\bibitem{PAR} D. Kim, J. Nam, J. Song, and S. Kim, Automatic patch generation learned from human-written patches. In \textit{Proceedings of the 2013 International Conference on Software Engineering.}  2013, pp. 802-811.
-
-\bibitem{Benchmarks}  C. Le Goues, N. Holtschulte, E.K. Smith, Y. Brun, P. Devanbu, S.  Forrest and W. Weimer, The ManyBugs and IntroClass benchmarks for automated repair of C programs. \textit{Software Engineering, IEEE Transactions}, 2015 vo. 41, no. 12, pp.1236-1256.
-
-\bibitem{History Driven Program Repair} X. Le , D. Lo, and C. Le Goues, History Driven Program Repair. \textit{2016 IEEE 23rd International Conference on Software Analysis, Evolution, and Reengineering (SANER)}, 2016, vo. 1, pp. 213-224.  
-
-\bibitem{SR thesis} Y. Ke. "An automated approach to program repair with semantic code search." M.S. thesis, CS Dept., ISU, Ames, IA, 2015.
-
-
-\end{thebibliography}
+\bibliographystyle{IEEEtran}
+\bibliography{IEEEabrv,saner-era2016}
 
 
 
