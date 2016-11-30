@@ -69,13 +69,13 @@ Improving performance of automatic program repair using learned heuristics
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{abstract}
 
-Automatic program repair offers the promise of significant reduction in debugging time.
- Early generate-and-test systems, such as the genetic programming method GenProg, have had problems creating high-quality patches due to overfitting to the test suite. 
- Recent efforts such as SPR and Prophet demonstrate that including external knowledge about the nature of correct repairs dramatically improves results. SearchRepair demonstrates that including semantic constraints can greatly improve patch quality, but has a high computational cost.  
- Combining Prophet's learning techniques with SearchRepair's semantic constraints allows for a method that is both fast and accurate. 
- This paper proposes a modification to SearchRepair that uses a fast classifier to quickly identify good candidate patches. 
- We use a random forest to quickly classify whether two pieces of code are similar, allowing the search to focus only on the best patch candidates. We report 96\% accuracy on this classification task, which is enough to greatly improve search speed. 
- We then train another forest on data regarding whether or not patches were correct, and use this to filter for patches with a high likelihood of success.
+Automatic program repair offers the promise of significant reduction in debugging time. 
+Early generate-and-test systems, such as the genetic programming method GenProg, have had problems creating high-quality patches due to overfitting to the test suite. 
+Recent efforts such as Prophet demonstrate that machine learning can be used to develop heuristics about which patches are likely to be correct, dramatically improving speed of search. SearchRepair takes a different approach to accuracy, using larger blocks of human-written code as patches to better constrain repairs. 
+However, large blocks of relevant code become scarcer as size increases, leading to large search spaces and high computational costs. 
+Combining Prophet's learning techniques with SearchRepair's larger block size allows for a method that is both fast and accurate, leading to higher-quality repairs. 
+We propose a novel, fast classifier to quickly identify good candidate patches in the SearchRepair context. 
+We use a random forest to quickly classify whether two pieces of code are similar, allowing the search to focus only on the best patch candidates. We report 96\% accuracy on this classification task, which is enough to greatly improve search speed.
 
 
 \textit{Keywords}-- Automatic program repair, Machine learning, Semantic search.
