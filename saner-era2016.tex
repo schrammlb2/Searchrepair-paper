@@ -69,11 +69,11 @@ Improving performance of automatic program repair using learned heuristics
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{abstract}
 
-Automatic program repair offers the promise of significant reduction in debugging time. 
+Automatic program repair offers the promise of significant reduction in debugging time, but still faces challenges in making the process efficient, accurate, and generalizable enough for application. 
 Early generate-and-test systems, such as the genetic programming method GenProg, have had problems creating high-quality patches due to overfitting to the test suite. 
 Recent efforts such as Prophet demonstrate that machine learning can be used to develop heuristics about which patches are likely to be correct, dramatically improving speed of search. SearchRepair takes a different approach to accuracy, using larger blocks of human-written code as patches to better constrain repairs. 
 However, large blocks of relevant code become scarcer as size increases, leading to large search spaces and high computational costs. 
-Combining Prophet's learning techniques with SearchRepair's larger block size allows for a method that is both fast and accurate, leading to higher-quality repairs. 
+This project combines Prophet's learning techniques with SearchRepair's larger block size to create a method that is both fast and accurate, leading to higher-quality repairs. 
 We propose a novel, fast classifier to quickly identify good candidate patches in the SearchRepair context. 
 We use a random forest to quickly classify whether two pieces of code are similar, allowing the search to focus only on the best patch candidates. We report 96\% accuracy on this classification task, which is enough to greatly improve search speed.
 
@@ -93,10 +93,11 @@ Software debugging is a tedious, expensive, and manual process.
 The majority of the cost of most software projects is spent on software maintenance, and the majority of the cost of software maintenance is debugging \cite{Genprog}. 
 Automated program repair offers the promise of dramatically lowering or even eliminating these costs. 
 However, the fledgling field still struggles with making tools that are practical enough to reach the level of popular usage. 
-For an automated repair tool to be not only successful but widely useful, it must be meet certain criteria of efficiency, accuracy, and generality.
+For an automated repair tool to be not only successful but widely useful, it must be meet certain criteria of efficiency, accuracy, and generality. For our purposes, we define these as:
 \begin{itemize}
 \item Efficiency: 
-	The ability to create and validate a patch for a given bug in a reasonable amount of time. An automated program repair tool must be fast enough that it is cheaper and more convenient to fix the bug automatically than it is to fix it by hand.
+	The ability to create and validate a patch for a given bug in a reasonable amount of time. 
+	An automated program repair tool must be fast enough that it is cheaper and more convenient to fix the bug automatically than it is to fix it by hand.
 	
 \item Accuracy: 
 The probability that the patch proposed for a given bug is correct. 
@@ -114,9 +115,8 @@ Several methods exist for automatic program repair, but all of them encounter pr
 Semantic algorithms like DirectFix or Angelix are limited in the bugs they are able to address and sometimes scale poorly \cite{Angelix}. 
 Search-based algorithms such as GenProg and SPR offer the possibility of a wider range of patches, but also are very likely to create patches which pass the test suite, but are ultimately incorrect \cite{Angelix}, \cite{SPR} \cite{Genprog}. One reason that search-based methods have this problem is that the search space is effectively infinite, and within this space, there are many more patches that pass all tests (plausible patches) and are incorrect than there are correct patches \cite{searchspace}. 
 One solution to this problem is to use a fast, learned heuristic to focus the search on patches that look like human-written patches, which are more likely to be correct \cite{Prophet}. 
-Another approach is to introduce semantic constraints and use theorem proving to ensure that functionality is not deleted \cite{SearchRepair}, \cite{srthesis}. 
 
-In this paper, we combine this fast heuristic search with more rigorous theorem-proving techniques to create a method that is both fast and reliable. 
+Another approach is to encode test cases as semantic constraints and then paste in human-written code blocks as patches if they fit the constraints. The idea is that human-written code blocks are more likely to fit the correct functionality than computer-generated patches because they represent actual human coding patterns. In this paper, we combine this fast heuristic search with the more accurate human code block insertion technique to create a method that is both fast and reliable. 
 
 
 
@@ -158,7 +158,7 @@ They then generate a search space of patches from the remaining schemas, and tes
 Since correct patches are sparse in the space of plausible patches, randomly generating solutions is more likely to produce plausible, incorrect patches than correct patches \cite{searchspace}.  
 The authors of SPR and Prophet believe that their careful construction of patches is less likely to produce incorrect patches because it utilizes more information, both about the program and about the nature of developer patches.  
 Prophet also uses machine learning to select for patches with similar qualities to human patches \cite{Prophet}. 
-This has several advantages. 
+This feature has several advantages. 
 Firstly, it allows Prophet to rank patches without using the test suite, reducing the threat of overfitting. 
 Since applying the learner is also much faster than running the test suite, it also serves as a useful search heuristic. 
 This allows Prophet to focus its search significantly by looking for patches that share features with the correct patches. 
@@ -172,28 +172,33 @@ The other approach, which is taken by SearchRepair, uses an algorithm that combi
 \item Insert the code fragment and run the test suite.
 \end{enumerate}
 
-While still being somewhat similar to its ancestor GenProg, SearchRepair has a few changes that help it combat overfitting. 
+While still somewhat similar to its ancestor GenProg, SearchRepair has a few changes that help it combat overfitting. 
 Firstly, it copies and pastes larger sections of code. 
 The intuition is that while a single line may behave very differently out of context, a multiline block of code is less likely to do so. 
 SearchRepair would prefer to replace the entire buggy section with a correctly implemented version written by another human developer. 
-Since this replacement block was not overfit to the test suite when it was written, there is less risk of it being overfit to the test suite here. 
+Since this replacement block was not overfit to the test suite when it was written, there is less risk of it being overfit to the test suite in the repair. 
 In addition, SearchRepair uses theorem proving to speed up this search. 
 Although theorem proving is very slow, it is still much faster than running the test suite for every patch. 
 
+
 SearchRepair generates patches with much higher quality than its purely random counterparts, passing 97.3\% of tests in an independent test suite, as opposed to GenProg's 68.7\%. 
-Although SearchRepair did not fix as many bugs as GenProg, RSRepair, or AE, this may be because these other methods might have fixed a large number of bugs simply by deleting functionality \cite{SearchRepair}, \cite{plausibility}. 
+Although SearchRepair did not fix as many bugs as GenProg, RSRepair, or AE, this may be because other methods fixed bugs simply by deleting functionality \cite{SearchRepair}, \cite{plausibility}. 
 
 
-SearchRepair has major issues with scalability \cite{srthesis}. 
+While its accuracy is admirable, SearchRepair has issues with scalability \cite{srthesis}. 
 It was almost two orders of magnitude slower than the second slowest method run on the Introclass benchmark, and three orders of magnitude slower than all other methods. 
 One of the main reasons for this is the way its theorem prover works. 
 Because SearchRepair uses pieces of code from other applications as its patches, it must rename the variables to insert the code. 
 However, it has no \textit{a priori} way of knowing what the correct variable mapping is, so it must run theorem proving on each possible mapping \cite{srthesis}. 
-This means that the theorem prover must run $n!$ times on each patch, where n is the number of variables. 
-Since SMT satisfiability is already an NP-Hard problem, SearchRepair effectively tries to brute-force an NP-Hard problem (variable mapping) that involves solving another NP-Hard problem (SMT satisfiability) on every iteration. 
-This is, needless to say, very inefficient. 
 
-Amazingly, while this process is prohibitively expensive for large numbers of patches, the time taken to test a single patch is not terribly high. 
+In the original work, this meant that the theorem prover was run $n!$ times on each patch, where n is the number of variables. 
+Since SMT satisfiability is already an NP-Hard problem, SearchRepair effectively tried to brute-force an NP-Hard problem (variable mapping) that involves solving another NP-Hard problem (SMT satisfiability) on every iteration. 
+This was, needless to say, very inefficient. 
+
+Since the original work, the authors have found ways of speeding up this process. The mapping problem is now incorporated into the theorem proving, which allows all of the efficiencies of modern SAT solvers to be applied to mapping. However, the problem still remains that this method is not NP, since single-solution checking is NP-Hard (this assumes P =/= NP). 
+
+
+While this process is prohibitively expensive for large numbers of patches, the time taken to test a single patch is not terribly high. 
 Since most code fragments used by SearchRepair have no more than 4 or 5 variables, a single patch can often be tested in less than a second. 
 It is only when very large databases of code fragments must be searched that problems arise.
 
@@ -204,20 +209,13 @@ It is only when very large databases of code fragments must be searched that pro
 As stated earlier, both SearchRepair and SPR/Prophet have drawbacks, either in their scalability or in their accuracy. 
 For automatic program repair to become practically viable, a system must both create high-quality patches and be able to run in a reasonable amount of time.
 
-One way to avoid the large computational cost associated with SearchRepair's semantic search while maintaining high accuracy is to use a fast heuristic to eliminate poor candidates. 
+We propose that one way to avoid the large computational cost associated with SearchRepair's semantic search while maintaining high accuracy is to use a fast heuristic to eliminate poor patch candidates. 
 Using a heuristic to iterate over all the possible patches in a database lets us pick out those with a high likelihood of success, avoiding the majority of the computation previously required. 
 This heuristic must be independent of variable mappings in order to keep its cost from becoming prohibitively expensive. 
 The theorem prover would then run on these selected candidates, ensuring that each proposed patch is indeed of high quality.
 
-Since the cost of using theorem proving is much higher than the cost of using the learner, a high false negative rate is much more acceptable than a high false positive rate. 
-If, for instance, there was a false negative of 80\%, we could simply try five times as many patches at fairly low cost. 
-However, if we evaluate 1000 patches and have even a 10\% false positive rate, this means we must evaluate 100 patches with theorem proving. 
-Given SearchRepair's current speed, this would take about a minute. 
-However, since the learner has been able to evaluate around 50,000 patches per second, it would be more efficient to take a much larger database of patches and use a learner with a very low false positive rate. 
-Even if the learner has a false negative rate of over 50 percent, we can easily replace these cases by just searching more patches.
-
 To create such a heuristic, we begin with the feature extractor proposed by Long and Rinard in their Prophet paper \cite{Prophet}. 
-This method creates a list of atoms (variables or constants) and what operations the program uses on them. 
+This method creates a list of atoms (variables or constants) and operations the program uses on them. 
 For instance, if a program checks \texttt{if(a > c \&\& a < b)}, then assigns \texttt{median = a}, the feature extractor would record \texttt{a: lessthan, greaterthan, < assign, R>}. 
 The fact that \texttt{a} was on the right side of the assignment is recorded because assigning and being assigned to are very different operations. 
 
@@ -371,15 +369,14 @@ int main(void)
 \end{lstlisting}
 
 \section{Evaluation}
-
-Using these feature vectors, we trained a random forest to classify pairs code snippets based on whether they were from programs that were trying to do the same thing. 
+Using the proposed feature vectors, we trained a random forest to classify pairs code snippets based on whether they were from programs that were trying to do the same thing. 
 The intuition is that a program with similar functionality is far more likely to provide a correct patch than a program with very different functionality. 
 These code snippets were sampled from the IntroClass benchmark. 
 A pair was counted as a positive case if the two snippets were from programs submitted for the same assignment. 
 Otherwise, they were counted as a negative case. 
 The positive cases were sampled at a higher rate to make up for the asymmetry in the size of the classes. 
 
-To evaluate how effective different machine learning methods were for this set of features, we took a subset of the data and tried an array of machine learning techniques to see which produced the best results
+To evaluate how effective different machine learning methods were for this set of features, we took a subset of the data and tried an array of machine learning techniques to see which produced the best results.
 
 \begin{table}[H]
 \centering
@@ -396,11 +393,11 @@ Random Forest       & 14.07 s 	& 86.165\% \\
 J48                 & 27.22 s 	& 75.534\% \\
 AdaBoost            & 6.58 s  	& 56.738\% \\
 K-nearest neighbors & n/a    	& 81.587\% \\
-SMO					& 540.51	& 54.9593
+SMO					& 540.51s	& 54.9593
 \end{tabular}
 \end{table}
 
-Based on these results, we concluded that a Random Forest would be the most effective learner for this application. 
+Based on these results, we concluded that a random forest would be the most effective learner for this application. 
 For this reason, the rest of our experiments are conducted using a random forest.
 
 %\includegraphics[width=\textwidth]{one.JPG}
@@ -409,48 +406,36 @@ Using the full dataset, we train a random forest with 100 trees, run for 100 ite
 The forest was correctly able to classify 96.17\% of the test cases. The false positive rate (classified as being from the same assignment, but really from different assignments) was 5.4\%. 
 The false negative rate (classified as being from different assignments, but really from the same assignment)  was 2.4\%. 
 For this application, this is a very satisfactory result. 
-Since the vast majority of the patches are from programs with a different purpose than the buggy program, being able to rule out almost 95\% of these obviously bad candidates will significantly increase the search speed. 
 
-Once it was demonstrated that this method was effective at the code similarity task, it was applied to the patch recognition task as well. 
-For this, we used a random forest and the same training data as Prophet \cite{Prophet}. 
-We classify a patch as correct if and only it it is the developer-written patch. Although this is not necessary correct, very few copy-pasted code segments will produce correct results, whereas copying and pasting the developer patch into the buggy section always will. 
-We did not use actual SearchRepair patches because it would be computationally infeasible to create a large database of patch data using such a method. 
-Thus, pairs of bugs and their respective developer-written patches are considered positive cases, and other pairs are considered negative cases. 
+Next, the learner was incorporated into the SearchRepair pipeline, and the whole process was tested on the IntroClass benchmark. 
+The learner described in the previous paragraph was used as the filter. 
+At the time of writing, the full test without the filter has not yet finished, but has already run 6.83 times longer than it took the filtered version to complete. 
+As such, we cannot provide a measure of accuracy as we do not yet know how many correct patches the filter ruled out. 
+However, we do know that the filter was shown to have 97.6\% accuracy on the test dataset, and provides severalfold speedup over the unfiltered program. 
+The authors consider this to be a worthwhile tradeoff.
 
-%\includegraphics[width=\textwidth]{two.JPG}
-
-We found that the learner had a 66\% false negative rate and a 0.11\% false positive rate. 
-It was able to evaluate a set of 118,000 proposed patches in four seconds (Not including time to write the file). 
-Of the patches classified as correct by the learner, 20 out of 139, or about one in seven were in fact the developer patches. 
-This is a huge increase in the density of correct patches. 
-The space of potential patches generated for the learner contained about 1.6 correct patches per thousand. 
-Filtering to one in eight is a dramatic improvement. 
-Although most of the correct patches were discarded, the fact that the learner was able to search the space so quickly allows us to increase the total number of correct patches simply by expanding the state space. 
 
 \section{Future work}
 
-Now that the learner has been shown to be effective, the next step would be to make the database adaptive as well. 
-In the current implementation of SearchRepair, the patch database is scavenged more or less at random from a parent application or applications. 
-Some of these patches are likely to be much more successful than others. 
-For instance, a code snippet with an if statement checking whether or not an integer is equal to zero will likely be a far more useful patch than a section of code implementing a complex mathematical formula. 
-If the formula code is used infrequently enough, then the cost of checking its relevance for every bug will outweigh the benefits of keeping it stored. 
-If such a snippet is repeatedly not used, then it should be deleted from the database and replaced with another snippet with a better likelihood of repairing patches. 
-Similarly, highly redundant snippets are possible in the current implementation. 
-By keeping track of both how often a given snippet fails and how much its fixes overlap with those of other snippets, the database itself can be made adaptive. 
-This would allow the possibility of establishing a general set of patches that cover a wide range of bugs. 
-Other authors have tried similar techniques with good results. 
-For instance, in \textit{History Driven Program Repair}, the authors use a graph-based learner to learn general patch types from developer patches of real programs \cite{hdrepair}. 
-This learner is used to guide the creation of future patches, just like here the success of code snippets would guide their future use. 
+
+There are several steps that could be taken to improve the filter. 
+The next step would be to prepare it for a more general set of problems. 
+To do this, the learner must be trained on real patches rather than distinguishing different purposes for code segments.
+There are a few ways this could be done. 
+The first would be to mine patches to existing bugs with SearchRepair, verify each by hand, and feed them to the learner to train on. 
+This has the advantage that the filter would select for patches that SearchRepair is capable of making. 
+Another method would be to mine existing bug fixes from GitHub. This does not require manual verification, but would select for patches that look like human patches, rather than for patches that look like correct SearchRepair patches. 
 
 
 \section{CONCLUSIONS}
 
 Automated program repair holds a great deal of promise, but it is rapidly becoming apparent that purely random methods are not sufficient for high-quality patches. 
 Both patch synthesis methods like SPR and Prophet, and semantic constraint search-based methods such as SearchRepair have proven effective, but each has drawbacks as well. 
-Combining Prophet's fast feature-based search with SearchRepair's slower, more reliable constraint-solving allows us to produce a method that is both fast and accurate. 
+Combining Prophet's fast feature-based search with SearchRepair's slower, more reliable constraint-solving can produce a method that is both fast and accurate. 
 
 \section*{Acknowledgement}
-The authors would like to acknowledge the help of Claire Le Goues and Afsoon Afzal for their implementation of SearchRepair, as well as Kristen Justice for her guidance in this project.
+The authors would like to acknowledge the help of Afsoon Afzal for her implementation of SearchRepair and assistance with debugging.
+
 
 
 \addtolength{\textheight}{-12cm}   % This command serves to balance the column lengths
@@ -462,7 +447,7 @@ The authors would like to acknowledge the help of Claire Le Goues and Afsoon Afz
 
 
 
-\bibliographystyle{IEEEtran}
+%\bibliographystyle{IEEEtran}
 \bibliography{IEEEabrv,saner-era2016}
 
 
